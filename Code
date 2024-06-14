@@ -1,0 +1,348 @@
+include <iostream>
+#include <string>
+
+using namespace std;
+
+struct Car {
+    string model;
+    bool is_rented;
+    bool is_repaired;
+    bool is_reserved;
+    string rented_by;
+    string reserved_by;
+    string repaired_by;
+    string pickup_date;
+    string return_date;
+    Car* next;
+};
+
+class CarRentalSystem {
+
+private:
+    Car* head;
+
+public:
+    CarRentalSystem() {
+        head = nullptr;
+    }
+
+    void add_car(string model) {
+        Car* new_car = new Car;
+        new_car->model = model;
+        new_car->is_rented = false;
+        new_car->is_repaired = false;
+        new_car->is_reserved = false;
+        new_car->next = nullptr;
+        if (head == nullptr) {
+            head = new_car;
+        }
+        else {
+            Car* current = head;
+            while (current->next != nullptr) {
+                current = current->next;
+            }
+            current->next = new_car;
+        }
+    }
+
+    Car* get_car(int car_index) {
+        if (car_index < 0) {
+            return nullptr;
+        }
+        Car* current = head;
+        int index = 0;
+        while (current != nullptr && index < car_index) {
+            current = current->next;
+            index++;
+        }
+        return current;
+    }
+
+    void rent_car(int car_index, string customer_name, string pickup_date, string return_date) {
+        Car* car = get_car(car_index);
+        if (car == nullptr) {
+            cout << "Invalid car index." << endl;
+            return;
+        }
+            if (customer_name.find(' ') != string::npos) {
+        cout << "Invalid customer name. Please provide a single word name." << endl;
+        return;
+        }
+
+        if (car->is_rented || car->is_reserved) {
+            cout << "Car is not available for rent." << endl;
+            return;
+        }
+        // Validate pickup date
+        if (pickup_date.length() != 10 || pickup_date[4] != '-' || pickup_date[7] != '-') {
+            cout << "Invalid pickup date format. Please use YYYY-MM-DD." << endl;
+            return;
+        }
+        // Validate return date
+        if (return_date.length() != 10 || return_date[4] != '-' || return_date[7] != '-') {
+            cout << "Invalid return date format. Please use YYYY-MM-DD." << endl;
+            return;
+        }
+        car->is_rented = true;
+        car->rented_by = customer_name;
+        car->pickup_date = pickup_date;
+        car->return_date = return_date;
+
+        // Calculate rental duration and cost
+        int rental_days = calculateRentalDays(pickup_date, return_date);
+        int rental_cost = rental_days * 350;  // Assuming rental cost is �100 per day
+
+        cout << "Car rented successfully." << endl;
+        cout << "Rental duration: " << rental_days << " days" << endl;
+        cout << "Rental cost: EGP" << rental_cost << endl;
+    }
+
+    int calculateRentalDays(const string& pickup_date, const string& return_date) {
+        // Assuming the date format is always YYYY-MM-DD
+        int pickup_year = stoi(pickup_date.substr(0, 4));
+        int pickup_month = stoi(pickup_date.substr(5, 2));
+        int pickup_day = stoi(pickup_date.substr(8, 2));
+
+        int return_year = stoi(return_date.substr(0, 4));
+        int return_month = stoi(return_date.substr(5, 2));
+        int return_day = stoi(return_date.substr(8, 2));
+
+        // Calculate the difference in days
+        int days = 0;
+        while (pickup_year < return_year || pickup_month < return_month || pickup_day < return_day) {
+            pickup_day++;
+            if (pickup_day > 31) {
+                pickup_day = 1;
+                pickup_month++;
+            }
+            if (pickup_month > 12) {
+                pickup_month = 1;
+                pickup_year++;
+            }
+            days++;
+        }
+
+        return days;
+    }
+
+    void return_car(int car_index) {
+        Car* car = get_car(car_index);
+        if (car == nullptr) {
+            cout << "Invalid car index." << endl;
+            return;
+        }
+        if (!car->is_rented) {
+            cout << "Car is not rented." << endl;
+            return;
+        }
+        car->is_rented = false;
+        car->rented_by = "";
+        car->pickup_date = "";
+        car->return_date = "";
+        cout << "Car returned successfully." << endl;
+    }
+
+    void reserve_car(int car_index, string customer_name) {
+        Car* car = get_car(car_index);
+        if (car == nullptr) {
+            cout << "Invalid car index." << endl;
+            return;
+        }
+        if (car->is_rented || car->is_reserved) {
+            cout << "Car is not available for reservation." << endl;
+            return;
+        }
+        car->is_reserved = true;
+        car->reserved_by = customer_name;
+        cout << "Car reserved successfully." << endl;
+    }
+
+    void cancel_reservation(int car_index) {
+        Car* car = get_car(car_index);
+        if (car == nullptr) {
+            cout << "Invalid car index." << endl;
+            return;
+        }
+        if (!car->is_reserved) {
+            cout << "Car is not reserved." << endl;
+            return;
+        }
+        car->is_reserved = false;
+        car->reserved_by = "";
+        cout << "Reservation cancelled successfully." << endl;
+    }
+
+    void repair_car(int car_index, string mechanic_name) {
+        Car* car = get_car(car_index);
+        if (car == nullptr) {
+            cout << "Invalid car index." << endl;
+            return;
+        }
+        if (car->is_repaired) {
+            cout << "Car has already been repaired." << endl;
+            return;
+        }
+        car->is_repaired = true;
+        car->repaired_by = mechanic_name;
+        cout << "Car sent for repair." << endl;
+    }
+
+    void show_available_cars() {
+        cout << "Available cars:" << endl;
+        Car* current = head;
+        int index = 0;
+        while (current != nullptr) {
+            if (!current->is_rented && !current->is_reserved) {
+                cout << index << ". " << current->model << endl;
+            }
+            current = current->next;
+            index++;
+        }
+    }
+
+    void show_rented_cars() {
+        cout << "Rented cars:" << endl;
+        Car* current = head;
+        int index = 0;
+        while (current != nullptr) {
+            if (current->is_rented) {
+                cout << index << ". " << current->model << " (rented by " << current->rented_by << " from " << current->pickup_date << " to " << current->return_date << ")" << endl;
+            }
+            current = current->next;
+            index++;
+        }
+    }
+
+    void show_reserved_cars() {
+        cout << "Reserved cars:" << endl;
+        Car* current = head;
+        int index = 0;
+        while (current != nullptr) {
+            if (current->is_reserved) {
+                cout << index << ". " << current->model << " (reserved by " << current->reserved_by << ")" << endl;
+            }
+            current = current->next;
+            index++;
+        }
+    }
+};
+
+int main() {
+    CarRentalSystem system;
+    // Add some cars
+    system.add_car("Renault Sandero");
+    system.add_car("Toyota Yaris");
+    system.add_car("Kia Koup");
+
+    // Prompt user for username and password
+    string username, password;
+    cout << "Enter username: ";
+    cin >> username;
+    cout << "Enter password: ";
+    cin >> password;
+
+    // Check if username and password are correct
+    if (username == "admin" && password == "123") {
+        // Show main menu
+        int choice;
+        do {
+            cout << endl;
+            cout << "Main menu:" << endl;
+            cout << "1. Rent a car" << endl;
+            cout << "2. Return a car" << endl;
+            cout << "3. Reserve a car" << endl;
+            cout << "4. Cancel a reservation" << endl;
+            cout << "5. Repair a car" << endl;
+            cout << "6. Show available cars" << endl;
+            cout << "7. Show rented cars" << endl;
+            cout << "8. Show reserved cars" << endl;
+            cout << "9. Exit" << endl;
+            cout << "Enter your choice: ";
+            cin >> choice;
+            switch (choice) {
+            case 1: {
+                // Rent a car
+                int car_index;
+                string customer_name;
+                string pickup_date;
+                string return_date;
+                cout << "Enter car index: ";
+                cin >> car_index;
+                cout << "Enter customer name: ";
+                cin >> customer_name;
+                cout << "Enter pickup date (YYYY-MM-DD): ";
+                cin >> pickup_date;
+                cout << "Enter return date (YYYY-MM-DD): ";
+                cin >> return_date;
+                system.rent_car(car_index, customer_name, pickup_date, return_date);
+                break;
+            }
+            case 2: {
+                // Return a car
+                int car_index;
+                cout << "Enter car index: ";
+                cin >> car_index;
+                system.return_car(car_index);
+                break;
+            }
+            case 3: {
+                // Reserve a car
+                int car_index;
+                string customer_name;
+                cout << "Enter car index: ";
+                cin >> car_index;
+                cout << "Enter customer name: ";
+                cin >> customer_name;
+                system.reserve_car(car_index, customer_name);
+                break;
+            }
+            case 4: {
+                // Cancel a reservation
+                int car_index;
+                cout << "Enter car index: ";
+                cin >> car_index;
+                system.cancel_reservation(car_index);
+                break;
+            }
+            case 5: {
+                // Repair a car
+                int car_index;
+                string mechanic_name;
+                cout << "Enter car index: ";
+                cin >> car_index;
+                cout << "Enter mechanic name: ";
+                cin >> mechanic_name;
+                system.repair_car(car_index, mechanic_name);
+                break;
+            }
+            case 6: {
+                // Show available cars
+                system.show_available_cars();
+                break;
+            }
+            case 7: {
+                // Show rented cars
+                system.show_rented_cars();
+                break;
+            }
+            case 8: {
+                // Show reserved cars
+                system.show_reserved_cars();
+                break;
+            }
+            case 9:
+                // Exit
+                cout << "Exiting..." << endl;
+                break;
+            default:
+                cout << "Invalid choice. Please try again." << endl;
+            }
+        } while (choice != 9);
+    }
+    else {
+        cout << "Invalid username or password." << endl;
+    }
+
+    return 0;
+}
+
